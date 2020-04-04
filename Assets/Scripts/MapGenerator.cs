@@ -30,7 +30,7 @@ public class MapGenerator : MonoBehaviour
     private MapDisplay mapDisplay = null;
 
 
-    public enum DrawMode { NoiseMap, RegionColorMap };
+    public enum DrawMode { NoiseMap, RegionColorMap, Mesh };
     [SerializeField]
     private DrawMode _drawMode = DrawMode.NoiseMap;
     [SerializeField]
@@ -51,6 +51,10 @@ public class MapGenerator : MonoBehaviour
         else if (_drawMode == DrawMode.RegionColorMap)
         {
             mapDisplay.DrawTexture(TextureGenerator.TextureFromColormap(colormap, _mapWidth, _mapHeight));
+        }
+        else if (_drawMode == DrawMode.Mesh)
+        {
+            mapDisplay.DrawMesh(MeshGenerator.GenerateTerrainMesh(noiseMap), TextureGenerator.TextureFromColormap(colormap, _mapWidth, _mapHeight));
         }
     }
 

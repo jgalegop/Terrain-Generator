@@ -235,12 +235,12 @@ MonoBehaviour:
   _seed: 0
   _offset: {x: 5.76, y: 3.23}
   _noiseScale: 45.74
-  _octaves: 3
+  _octaves: 4
   _persistance: 0.5
   _lacunarity: 2
   AutoUpdate: 1
   mapDisplay: {fileID: 281935784}
-  _drawMode: 1
+  _drawMode: 0
   _regions:
   - name: Water
     height: 0.4
