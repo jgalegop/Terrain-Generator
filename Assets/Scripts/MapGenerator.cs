@@ -2,13 +2,28 @@
 
 public class MapGenerator : MonoBehaviour
 {
+    [Header("Map parameters")]
     [SerializeField]
     private int _mapWidth = 2;
     [SerializeField]
     private int _mapHeight = 2;
+
+    [SerializeField]
+    private int _seed = 0;
+    [SerializeField]
+    private Vector2 _offset = Vector2.zero;
+
     [SerializeField]
     private float _noiseScale = 1;
 
+    [SerializeField]
+    private int _octaves = 1;
+    [SerializeField] [Range(0, 1)]
+    private float _persistance = 0.5f;
+    [SerializeField]
+    private float _lacunarity = 2f;
+
+    [Header("Map generator display")]
     public bool AutoUpdate = true;
 
     [SerializeField]
@@ -20,11 +35,11 @@ public class MapGenerator : MonoBehaviour
     private DrawMode _drawMode = DrawMode.NoiseMap;
     [SerializeField]
     private TerrainType[] _regions = null;
-
+    
 
     public void GenerateMap()
     {
-        float[,] noiseMap = Noise.GenerateNoiseMap(_mapWidth, _mapHeight, _noiseScale);
+        float[,] noiseMap = Noise.GenerateNoiseMap(_mapWidth, _mapHeight, _seed, _noiseScale, _octaves, _persistance, _lacunarity, _offset);
 
         Color[] colormap = SetColorMap(noiseMap);
 
@@ -58,6 +73,18 @@ public class MapGenerator : MonoBehaviour
             }
         }
         return colormap;
+    }
+
+    private void OnValidate()
+    {
+        if (_mapHeight < 1)
+            _mapHeight = 1;
+        if (_mapWidth < 1)
+            _mapWidth = 1;
+        if (_lacunarity < 1)
+            _lacunarity = 1;
+        if (_octaves < 0)
+            _octaves = 0;
     }
 }
 
