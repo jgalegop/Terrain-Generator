@@ -71,11 +71,20 @@ public class MapGenerator : MonoBehaviour
             for (int x = 0; x < _mapWidth; x++)
             {
                 float currentHeight = noiseMap[x, y];
-                foreach (TerrainType region in _regions)
+
+                float lowerHeight = 0;
+                for (int i = 0; i < _regions.Length; i++)
                 {
+                    TerrainType region = _regions[i];
+
                     if (currentHeight <= region.height)
                     {
-                        colormap[y * _mapWidth + x] = region.color;
+                        if (i > 0)
+                            lowerHeight = _regions[i - 1].height;
+
+                        float t = Mathf.InverseLerp(lowerHeight, region.height, currentHeight);
+                        Color regionColor = Color.Lerp(region.startColor, region.endColor, t);
+                        colormap[y * _mapWidth + x] = regionColor;
                         break;
                     }
                 }
@@ -103,5 +112,6 @@ public struct TerrainType
 {
     public string name;
     public float height;
-    public Color color;
+    public Color startColor;
+    public Color endColor;
 }
