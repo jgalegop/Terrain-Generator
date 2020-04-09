@@ -8,6 +8,11 @@ public static class TextureGenerator
         texture.SetPixels(colormap);
         texture.filterMode = FilterMode.Point;
         texture.wrapMode = TextureWrapMode.Clamp;
+        Color32[] colormap32 = texture.GetPixels32();
+        texture.SetPixels32(colormap32);
+        texture.filterMode = FilterMode.Point;
+        texture.wrapMode = TextureWrapMode.Clamp;
+        texture.anisoLevel = 9;
         texture.Apply();
         return texture;
     }

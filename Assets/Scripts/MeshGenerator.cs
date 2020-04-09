@@ -27,11 +27,16 @@ public static class MeshGenerator
         var triangles = new List<int>();
         var uvs = new List<Vector2>();
 
+        int indicesCountCurrentIter = 0;
         for (int y = 0; y < tilesHeight; y++)
         {
             for (int x = 0; x < tilesWidth; x++)
             {
+                int indicesCountLastIter = indicesCountCurrentIter;
+                indicesCountCurrentIter = 0;
+
                 bool isWaterTile = heightMap[x, y] < waterThreshold;
+
                 int vertexIndex = vertices.Count;
 
                 float height = (isWaterTile) ? (defaultHeight - waterDepth) : defaultHeight;
@@ -39,14 +44,76 @@ public static class MeshGenerator
                 Vector3 ne = nw + Vector3.right;
                 Vector3 sw = nw - Vector3.forward;
                 Vector3 se = sw + Vector3.right;
-                Vector3[] tileVertices = { nw, ne, sw, se };
+
+                // check that previous tile in x-line has west indices (only check x-lines)
+                List<Vector3> tileVertices = new List<Vector3>();
+                int nwIndex = vertexIndex;
+                int neIndex = vertexIndex + 1;
+                int swIndex = vertexIndex + 2;
+                int seIndex = vertexIndex + 3;
+
+                if (y == 0 && false)
+                {
+                    if (vertices.Contains(nw))
+                    {
+                        Debug.Log("contains nw");
+                        nwIndex = vertices.IndexOf(nw, vertexIndex - indicesCountLastIter);
+                        if (nwIndex < 0)
+                        {
+                            Debug.LogWarning("NW index at x = " + x + ", y = " + y + " has not been found");
+                            tileVertices.Add(nw);
+                            vertexIndex++;
+                            indicesCountCurrentIter++;
+                        }
+                    }
+                    else
+                    {
+                        tileVertices.Add(nw);
+                        vertexIndex++;
+                        indicesCountCurrentIter++;
+                    }
+
+                    tileVertices.Add(ne);
+                    neIndex = vertexIndex;
+                    vertexIndex++;
+                    indicesCountCurrentIter++;
+
+                    if (vertices.Contains(sw))
+                    {
+                        Debug.Log("contains sw");
+                        swIndex = vertices.IndexOf(sw, vertexIndex - indicesCountLastIter);
+                        if (swIndex < 0)
+                        {
+                            Debug.LogWarning("SW index at x = " + x + ", y = " + y + " has not been found");
+                            tileVertices.Add(sw);
+                            vertexIndex++;
+                            indicesCountCurrentIter++;
+                        }
+                    }
+                    else
+                    {
+                        tileVertices.Add(sw);
+                        vertexIndex++;
+                        indicesCountCurrentIter++;
+                    }
+
+                    tileVertices.Add(se);
+                    seIndex = vertexIndex;
+                    indicesCountCurrentIter++;
+                }
+                else
+                {
+                    tileVertices.AddRange(new Vector3[] { nw, ne, sw, se });
+                    indicesCountCurrentIter += 4;
+                }
+
                 vertices.AddRange(tileVertices);
-                normals.AddRange(tileNormals);
+                normals.AddRange(NormalsUpArray(indicesCountCurrentIter));
 
                 Vector2 uv = new Vector2(x / (float)tilesWidth, y / (float)tilesHeight);
-                uvs.AddRange(new Vector2[] { uv, uv, uv, uv });
+                uvs.AddRange(UvsArray(uv, indicesCountCurrentIter));
 
-                int[] triangleIndices = { vertexIndex, vertexIndex + 1, vertexIndex + 2, vertexIndex + 1, vertexIndex + 3, vertexIndex + 2 };
+                int[] triangleIndices = { nwIndex, neIndex, swIndex, neIndex, seIndex, swIndex };
                 triangles.AddRange(triangleIndices);
 
                 
@@ -66,7 +133,24 @@ public static class MeshGenerator
                         if (isNeighbourOutside || (!isWaterTile && isNeighbourWaterTile))
                         {
                             float depth = (isNeighbourOutside) ? height : waterDepth;
+
                             vertexIndex = vertices.Count;
+                            //Debug.Log("vertices count " + vertexIndex);
+                            //Debug.Log("normals count " + normals.Count);
+                            //Debug.Log("uvs count " + uvs.Count);
+
+                            // vertices from the west may be already done (both the upper and lower ones)
+                            // we need to find them and get their indices
+                            // then, add necessary indices only 
+                            // and create triangles
+
+                            // select vertices according to in which direction we are right now
+
+                            // if looking north, we need to add nw + down & ne + down
+                            // but then we need to make triangles using the west vertices, so we need to find them
+                            //if (i == 0)
+                            // THINK OF COUNTING SEPARETEDLY indexCounter for tile-vertices and for side-vertices
+                            // that way we can distinguish between the two types of indices when searching for them
 
                             int vertSideIndexA = nsweSideVertIndex[i][0];
                             int vertSideIndexB = nsweSideVertIndex[i][1];
@@ -74,6 +158,7 @@ public static class MeshGenerator
                             vertices.Add(tileVertices[vertSideIndexA] + Vector3.down * depth);
                             vertices.Add(tileVertices[vertSideIndexB]);
                             vertices.Add(tileVertices[vertSideIndexB] + Vector3.down * depth);
+                            indicesCountCurrentIter += 4;
 
                             uvs.AddRange(new Vector2[] { uv, uv, uv, uv });
 
@@ -89,10 +174,32 @@ public static class MeshGenerator
             }
         }
 
+        //Debug.Log(vertices.Count);
+        //Debug.Log(normals.Count);
+
         return new MeshData(vertices.ToArray(), triangles.ToArray(), uvs.ToArray(), normals.ToArray());
     }
 
 
+    private static Vector3[] NormalsUpArray(int size)
+    {
+        var normals = new Vector3[size];
+        for (int i = 0; i < size; i++)
+        {
+            normals[i] = Vector3.up;
+        }
+        return normals;
+    }
+
+    private static Vector2[] UvsArray(Vector2 uv, int size)
+    {
+        var uvs = new Vector2[size];
+        for (int i = 0; i < size; i++)
+        {
+            uvs[i] = uv;
+        }
+        return uvs;
+    }
 
     public class MeshData
     {
@@ -114,11 +221,18 @@ public static class MeshGenerator
         {
             Mesh mesh = new Mesh();
             mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+            mesh.vertices = vertices;
+            mesh.triangles = triangles;
+            mesh.uv = uvs;
+            mesh.RecalculateNormals();
+            /*
             mesh.SetVertices(vertices);
             mesh.SetTriangles(triangles, 0, true);
             mesh.SetUVs(0, uvs);
             mesh.SetNormals(normals);
             mesh.Optimize();
+            mesh.RecalculateNormals();
+            */
             return mesh;
         }
     }
