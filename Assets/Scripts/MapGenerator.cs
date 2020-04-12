@@ -35,7 +35,11 @@ public class MapGenerator : MonoBehaviour
     private DrawMode _drawMode = DrawMode.NoiseMap;
     [SerializeField]
     private TerrainType[] _regions = null;
-    
+
+    private void Awake()
+    {
+        GenerateMap();
+    }
 
     public void GenerateMap()
     {
