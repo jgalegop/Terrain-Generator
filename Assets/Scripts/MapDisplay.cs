@@ -26,5 +26,6 @@ public class MapDisplay : MonoBehaviour
     {
         _meshFilter.sharedMesh = meshData.CreateMesh();
         _meshRenderer.sharedMaterial.mainTexture = texture;
+        ObstacleGenerator.GenerateObstacleMesh(meshData);
     }
 }

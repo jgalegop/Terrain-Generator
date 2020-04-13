@@ -27,7 +27,10 @@ public class MapGenerator : MonoBehaviour
     public bool AutoUpdate = true;
 
     [SerializeField]
-    private MapDisplay mapDisplay = null;
+    private MapDisplay _mapDisplay = null;
+
+    [SerializeField]
+    private bool _generateObstacles = false;
 
 
     public enum DrawMode { NoiseMap, RegionColorMap, Mesh, Mesh3D };
@@ -50,19 +53,22 @@ public class MapGenerator : MonoBehaviour
         // Display
         if (_drawMode == DrawMode.NoiseMap)
         {
-            mapDisplay.DrawTexture(TextureGenerator.TextureFromHeightMap(noiseMap));
+            _mapDisplay.DrawTexture(TextureGenerator.TextureFromHeightMap(noiseMap));
         }   
         else if (_drawMode == DrawMode.RegionColorMap)
         {
-            mapDisplay.DrawTexture(TextureGenerator.TextureFromColormap(colormap, _mapWidth, _mapHeight));
+            _mapDisplay.DrawTexture(TextureGenerator.TextureFromColormap(colormap, _mapWidth, _mapHeight));
         }
         else if (_drawMode == DrawMode.Mesh)
         {
-            mapDisplay.DrawMesh(MeshGenerator.GenerateTerrainMesh(noiseMap), TextureGenerator.TextureFromColormap(colormap, _mapWidth, _mapHeight));
+            var meshData = MeshGenerator.GenerateTerrainMesh(noiseMap, _regions[0].height);
+            _mapDisplay.DrawMesh(meshData, TextureGenerator.TextureFromColormap(colormap, _mapWidth, _mapHeight));
+            if (_generateObstacles)
+                ObstacleGenerator.GenerateObstacleMesh(meshData);
         }
         else if (_drawMode == DrawMode.Mesh3D)
         {
-            mapDisplay.DrawMesh3D(MeshGenerator3D.GenerateTerrainMesh(noiseMap), TextureGenerator.TextureFromColormap(colormap, _mapWidth, _mapHeight));
+            _mapDisplay.DrawMesh3D(MeshGenerator3D.GenerateTerrainMesh(noiseMap), TextureGenerator.TextureFromColormap(colormap, _mapWidth, _mapHeight));
         }
         
     }

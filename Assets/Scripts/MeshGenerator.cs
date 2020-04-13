@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 public static class MeshGenerator
 {
-    public static MeshData GenerateTerrainMesh(float[,] heightMap)
+    public static MeshData GenerateTerrainMesh(float[,] heightMap, float waterThreshold)
     {
         int tilesWidth = heightMap.GetLength(0);
         int tilesHeight = heightMap.GetLength(1);
@@ -11,7 +11,6 @@ public static class MeshGenerator
         float topLeftX = - 0.5f * tilesWidth;
         float topLeftZ = 0.5f * tilesHeight;
 
-        float waterThreshold = 0.4f;
         float defaultHeight = 1f;
         float waterDepth = 0.2f;
 
@@ -27,6 +26,8 @@ public static class MeshGenerator
         var normals = new List<Vector3>();
         var triangles = new List<int>();
         var uvs = new List<Vector2>();
+        bool[,] walkableBoundary = new bool[tilesWidth, tilesHeight];
+        bool[,] waterTile = new bool[tilesWidth, tilesHeight];
 
         float uFraction = 1f / (float)tilesWidth;
         float vFraction = 1f / (float)tilesHeight;
@@ -113,7 +114,11 @@ public static class MeshGenerator
                 tileVertices = new List<Vector3> { nw, ne, sw, se };
 
 
+                waterTile[x, y] = isWaterTile;
+                walkableBoundary[x, y] = false;
+
                 bool isEdgeTile = x == 0 || y == 0 || x == tilesWidth - 1 || y == tilesHeight - 1;
+
                 if (!isWaterTile || isEdgeTile)
                 {
                     for (int i = 0; i < nswe.Length; i++)
@@ -125,6 +130,9 @@ public static class MeshGenerator
                         bool isNeighbourWaterTile = false;
                         if (!isNeighbourOutside)
                             isNeighbourWaterTile = heightMap[neighbourX, neighbourY] < waterThreshold;
+
+                        if (!walkableBoundary[x, y])
+                            walkableBoundary[x, y] = isNeighbourOutside || (!isWaterTile && isNeighbourWaterTile);
 
                         if (isNeighbourOutside || (!isWaterTile && isNeighbourWaterTile))
                         {
@@ -170,7 +178,7 @@ public static class MeshGenerator
             }
         }
 
-        return new MeshData(vertices.ToArray(), triangles.ToArray(), uvs.ToArray(), normals.ToArray());
+        return new MeshData(vertices.ToArray(), triangles.ToArray(), uvs.ToArray(), normals.ToArray(), walkableBoundary, waterTile);
     }
 
     private static Vector3[] NormalsArray(int size, Vector3 normal)
@@ -185,18 +193,21 @@ public static class MeshGenerator
 
     public class MeshData
     {
-        //public Vector3[,] tileCenters;
         public Vector3[] vertices;
         public int[] triangles;
         public Vector2[] uvs;
         public Vector3[] normals;
+        public bool[,] walkableBoundary;
+        public bool[,] waterTile;
 
-        public MeshData(Vector3[] vertices, int[] triangles, Vector2[] uvs, Vector3[] normals)
+        public MeshData(Vector3[] vertices, int[] triangles, Vector2[] uvs, Vector3[] normals, bool[,] walkableBoundary, bool[,] waterTile)
         {
             this.vertices = vertices;
             this.triangles = triangles;
             this.uvs = uvs;
             this.normals = normals;
+            this.walkableBoundary = walkableBoundary;
+            this.waterTile = waterTile;
         }
 
         public Mesh CreateMesh()
