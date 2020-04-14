@@ -26,7 +26,7 @@ public static class ObstacleGenerator
         var normals = new List<Vector3>();
         var triangles = new List<int>();
 
-        int vertexIndex = 0;
+        int vertexIndex;
 
         int indicesCountCurrentIter = 0;
         int indicesCountCurrentRow = 0;
@@ -37,11 +37,11 @@ public static class ObstacleGenerator
 
             for (int x = 0; x < width; x++)
             {
+                int indicesCountLastIter = indicesCountCurrentIter;
+                indicesCountCurrentIter = 0;
+
                 if (waterTile[x, y])
                 {
-                    int indicesCountLastIter = indicesCountCurrentIter;
-                    indicesCountCurrentIter = 0;
-
                     vertexIndex = vertices.Count;
 
                     Vector3 nw = new Vector3(topLeftX + x, 1f, topLeftZ - y);
@@ -93,8 +93,6 @@ public static class ObstacleGenerator
 
                     int[] triangleIndices = { nwIndex, neIndex, swIndex, neIndex, seIndex, swIndex };
                     triangles.AddRange(triangleIndices);
-
-                    tileVertices = new List<Vector3> { nw, ne, sw, se };
                 }
 
                 if (walkableBoundary[x, y])
