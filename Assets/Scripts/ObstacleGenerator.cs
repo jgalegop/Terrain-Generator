@@ -28,14 +28,77 @@ public static class ObstacleGenerator
 
         int vertexIndex = 0;
 
+        int indicesCountCurrentIter = 0;
+        int indicesCountCurrentRow = 0;
         for (int y = 0; y < height; y++)
         {
+            int indicesCountLastRow = indicesCountCurrentRow;
+            indicesCountCurrentRow = 0;
+
             for (int x = 0; x < width; x++)
             {
-                if (walkableBoundary[x,y])
+                if (waterTile[x, y])
                 {
-                    //Debug.Log("Boundary at y = " + y + ", x = " + x);
+                    int indicesCountLastIter = indicesCountCurrentIter;
+                    indicesCountCurrentIter = 0;
 
+                    vertexIndex = vertices.Count;
+
+                    Vector3 nw = new Vector3(topLeftX + x, 1f, topLeftZ - y);
+                    Vector3 ne = nw + Vector3.right;
+                    Vector3 sw = nw - Vector3.forward;
+                    Vector3 se = sw + Vector3.right;
+
+                    // check that previous tile in x-line has west indices (only check x-lines)
+                    List<Vector3> tileVertices = new List<Vector3>();
+                    int nwIndex, neIndex, swIndex, seIndex;
+
+
+                    // List.IndexOf() is x2 - x4 faster than List.Contains()
+                    // In IndexOf() we estimate the starting index to improve speed (x5 - x10 faster that without it)
+                    nwIndex = vertices.IndexOf(nw, vertexIndex - indicesCountLastRow - indicesCountCurrentRow - indicesCountCurrentIter);
+                    if (nwIndex == -1)
+                    {
+                        tileVertices.Add(nw);
+                        nwIndex = vertexIndex;
+                        vertexIndex++;
+                        indicesCountCurrentIter++;
+                    }
+
+                    neIndex = vertices.IndexOf(ne, vertexIndex - indicesCountLastRow - indicesCountCurrentRow - indicesCountCurrentIter);
+                    if (neIndex == -1)
+                    {
+                        tileVertices.Add(ne);
+                        neIndex = vertexIndex;
+                        vertexIndex++;
+                        indicesCountCurrentIter++;
+                    }
+
+                    swIndex = vertices.IndexOf(sw, vertexIndex - indicesCountLastIter - indicesCountCurrentIter);
+                    if (swIndex == -1)
+                    {
+                        tileVertices.Add(sw);
+                        swIndex = vertexIndex;
+                        vertexIndex++;
+                        indicesCountCurrentIter++;
+                    }
+
+                    // se vertex corner should never be already in the list so we just add it
+                    tileVertices.Add(se);
+                    seIndex = vertexIndex;
+                    indicesCountCurrentIter++;
+
+                    vertices.AddRange(tileVertices);
+                    normals.AddRange(NormalsArray(indicesCountCurrentIter, Vector3.up));
+
+                    int[] triangleIndices = { nwIndex, neIndex, swIndex, neIndex, seIndex, swIndex };
+                    triangles.AddRange(triangleIndices);
+
+                    tileVertices = new List<Vector3> { nw, ne, sw, se };
+                }
+
+                if (walkableBoundary[x, y])
+                {
                     Vector3 nw = new Vector3(topLeftX + x, 1f, topLeftZ - y);
                     Vector3 ne = nw + Vector3.right;
                     Vector3 sw = nw - Vector3.forward;
@@ -83,6 +146,8 @@ public static class ObstacleGenerator
                         }
                     }
                 }
+
+                indicesCountCurrentRow += indicesCountCurrentIter;
             }
         }
 
